@@ -1,22 +1,34 @@
+import datetime
+
+
+def timer(func):
+    def wrapper(val):
+        time = datetime.datetime.now()
+        func(val)
+        print("Время выполнения =", datetime.datetime.now() - time)
+
+    return wrapper
+
+
 class IterFib:
     def __iter__(self):
-        return self
-    def __init__(self, val):
-        self.val = val
         self.val1 = 0
         self.val2 = 1
+        return self
+
     def __next__(self):
-        if self.val2 < self.val:
-            self.temp = self.val2
-            self.val2 = self.val1 + self.val2
-            self.val1 = self.temp
-            return self.val1
-        else:
-            raise StopIteration
+        self.val1, self.val2 = self.val2, self.val1 + self.val2
+        return self.val1
 
 
-iter = IterFib(1000)
+iterator = IterFib()
+iterator = iter(iterator)
 
 
-for i in iter:
-    print(i)
+@timer
+def iterations(val):
+    for i in range(val):
+        print(next(iterator))
+
+
+iterations(100)
