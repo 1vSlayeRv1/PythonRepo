@@ -23,10 +23,10 @@ def timer(requests):
 
 def async_timer(requests):
     def my_func(func):
-        def wrapper(self, url, filename, logging):
+        def wrapper(self, url, filename):
             print("Запуск асинхронной функции(метода)")
             time = datetime.datetime.now()
-            func(self, url, filename, requests, logging)
+            func(self, url, filename, requests, True)
 
             print("Время выполнения:", datetime.datetime.now() - time)
 
@@ -73,7 +73,7 @@ class Download_images(metaclass=abc.ABCMeta):
         loop.run_until_complete(self.main(url, filename, val, logging))
 
 
-class Download_sync(Download_images):
+class Download(Download_images):
     @timer(5)
     def download_image(self, url, filename, counter):
         super().download_image(url, filename, counter)
@@ -83,6 +83,6 @@ class Download_sync(Download_images):
         super().async_many_downloads(url, filename, val, logging)
 
 
-ds = Download_sync()
-ds.download_image("https://aws.random.cat/meow", "cat")
-ds.async_many_downloads("https://aws.random.cat/meow", "catA", logging=True)
+download_img = Download()
+download_img.download_image("https://aws.random.cat/meow", "cat")
+download_img.async_many_downloads("https://aws.random.cat/meow", "catA")
