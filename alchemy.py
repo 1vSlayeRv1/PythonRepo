@@ -98,22 +98,6 @@ class Par(Elements):
         print("пар!")
 
 
-class Animals(Alchemy):
-    pass
-
-
-class Materials(Alchemy):
-
-    def hello(self):
-        pass
-
-
-class Food(Alchemy):
-
-    def hello(self):
-        pass
-
-
 class Controller(Alchemy):
     def __init__(self):
         print("Начало игры!")
