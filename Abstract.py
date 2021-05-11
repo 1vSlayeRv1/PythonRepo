@@ -16,7 +16,8 @@ def timer(func_type: str, is_logging: bool = False):
                 started_at = datetime.datetime.now()
                 for i in range(value_requests):
                     func(self, url, filename, i)
-                    print(f"Create file \"{filename}_{i}.jpg\"")
+                    if is_logging:
+                        print(f"Create file \"{filename}_{i}.jpg\"")
                 print("Время выполнения:",
                       datetime.datetime.now() - started_at)
 
@@ -48,7 +49,7 @@ class AbstractDownload(metaclass=abc.ABCMeta):
 
 
 class DownloadImgSync(AbstractDownload):
-    @timer("sync")
+    @timer("sync", True)
     def __init__(self, url: str, filename: str, image_counter: int = 1):
         self.main(url, filename, image_counter)
 
