@@ -27,6 +27,12 @@ def timer(func_type: str, is_logging: bool = False):
                 func(self, url, filename, value_requests, is_logging)
                 print("Время выполнения:",
                       datetime.datetime.now() - started_at)
+            elif func_type == "txt":
+                print("Запуск функции загрузки в txt")
+                started_at = datetime.datetime.now()
+                func(self, url, filename, value_requests, is_logging)
+                print("Время выполнения:",
+                      datetime.datetime.now() - started_at)
 
         return wrapper
 
@@ -36,7 +42,7 @@ def timer(func_type: str, is_logging: bool = False):
 class AbstractDownload(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    async def get_json_from_url(self, *args, **kwargs) -> dict[str, str]:
+    async def get_info_from_url(self, *args, **kwargs) -> any:
         pass
 
     @abc.abstractmethod
@@ -53,14 +59,14 @@ class DownloadImgSync(AbstractDownload):
     def __init__(self, url: str, filename: str, image_counter: int = 1):
         self.main(url, filename, image_counter)
 
-    def get_json_from_url(self, url: str) -> dict[str, str]:
+    def get_info_from_url(self, url: str) -> dict[str, str]:
         response = requests.get(url)
         response_decode = response.content.decode()
         response_json = json.loads(response_decode)
         return response_json
 
     def downloader(self, url: str, filename: str, image_counter: int) -> None:
-        image = requests.get(self.get_json_from_url(url)['file'])
+        image = requests.get(self.get_info_from_url(url)['file'])
         with open(f"{filename}_{image_counter}.jpg", 'wb') as f:
             f.write(image.content)
 
@@ -76,7 +82,7 @@ class DownloadImgAsync(AbstractDownload):
         loop.run_until_complete(
             self.main(url, filename, value_requests, is_logging))
 
-    async def get_json_from_url(self, url: str, session) -> dict[str, str]:
+    async def get_info_from_url(self, url: str, session) -> dict[str, str]:
         async with session.get(url) as resp:
             if resp.status == 200:
                 return json.loads(await resp.text())
@@ -86,7 +92,7 @@ class DownloadImgAsync(AbstractDownload):
     async def downloader(self, url: str, filename: str,
                          session, require_number: int,
                          is_logging: bool) -> None:
-        images = await self.get_json_from_url(url, session)
+        images = await self.get_info_from_url(url, session)
         async with session.get(images['file']) as resp2:
             with open(f"{filename}_async_{require_number}.jpg", 'wb') as f:
                 f.write(await resp2.read())
@@ -105,7 +111,47 @@ class DownloadImgAsync(AbstractDownload):
             )
 
 
+class DownloadTxt(AbstractDownload):
+    @timer("txt", True)
+    def __init__(self, url: str, filename: str, value_requests: int = 1,
+                 is_logging: bool = False):
+        self.url = url
+        self.value_requests = value_requests
+        self.filename = filename
+        self.is_logging = is_logging
+
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.main())
+
+    async def get_info_from_url(self, *args, **kwargs) -> str:
+        async with args[0].get(self.url) as resp:
+            if resp.status == 200:
+                return await resp.text()
+            else:
+                raise requests.exceptions.HTTPError
+
+    async def main(self, *args, **kwargs) -> None:
+        async with aiohttp.ClientSession() as session:
+            await asyncio.gather(
+                *[self.downloader(session, i) for i in
+                  range(self.value_requests)]
+            )
+
+    async def downloader(self, *args, **kwargs) -> None:
+        """
+
+        :param args: (session, file_counter)
+        """
+        txt = await self.get_info_from_url(args[0])
+        with open(f'{self.filename}_{args[1]}.txt', 'w') as f:
+            f.write(txt)
+            if self.is_logging:
+                print(f'file \"{self.filename}_{args[1]}.txt\" created')
+
+
 CAT_API_URL = "https://aws.random.cat/meow"
+
+DownloadTxt(CAT_API_URL, "json_from_aws", 2)
 
 DownloadImgAsync(CAT_API_URL, "cat", 5)
 
