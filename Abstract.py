@@ -36,7 +36,7 @@ def timer(func_type: str, is_logging: bool = False):
 class AbstractDownload(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    async def get_json_from_url(self, *args, **kwargs) -> list:
+    async def get_json_from_url(self, *args, **kwargs) -> dict[str, str]:
         pass
 
     @abc.abstractmethod
