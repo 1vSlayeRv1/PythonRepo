@@ -1,34 +1,31 @@
 import abc
-import requests
 import datetime
 import json
+import requests
+# from __future__ import annotations
+
 import asyncio
 import aiohttp
 
 
-def timer(val):
+def timer(func_type: str, is_logging: bool = False):
     def my_func(func):
-        def wrapper(self, url, filename):
-            print("Запуск синхронной функции(метода)")
-            time = datetime.datetime.now()
-            for i in range(val):
-                func(self, url, filename, i)
-                print(f"Create file \"{filename}_{i}.jpg\"")
-            print("Время выполнения:", datetime.datetime.now() - time)
+        def wrapper(self, url: str, filename: str, value_requests: int):
+            if func_type == "sync":
+                print("Запуск синхронной функции(метода)")
+                started_at = datetime.datetime.now()
+                for i in range(value_requests):
+                    func(self, url, filename, i)
+                    print(f"Create file \"{filename}_{i}.jpg\"")
+                print("Время выполнения:",
+                      datetime.datetime.now() - started_at)
 
-        return wrapper
-
-    return my_func
-
-
-def async_timer(val):
-    def my_func(func):
-        def wrapper(self, url, filename):
-            print("Запуск асинхронной функции(метода)")
-            time = datetime.datetime.now()
-            func(self, url, filename, val, True)
-
-            print("Время выполнения:", datetime.datetime.now() - time)
+            elif func_type == "async":
+                print("Запуск асинхронной функции(метода)")
+                started_at = datetime.datetime.now()
+                func(self, url, filename, value_requests, is_logging)
+                print("Время выполнения:",
+                      datetime.datetime.now() - started_at)
 
         return wrapper
 
@@ -36,53 +33,76 @@ def async_timer(val):
 
 
 class AbstractDownload(metaclass=abc.ABCMeta):
+
     @abc.abstractmethod
-    def download_images_sync(self, url, filename, val):
+    async def get_json_from_url(self) -> list:
         pass
 
-    async def get_url_img(self, url, filename, session, require_number):
-        url = "https://aws.random.cat/meow"
+    @abc.abstractmethod
+    async def downloader(self) -> None:
+        pass
+
+    @abc.abstractmethod
+    async def main(self) -> None:
+        pass
+
+
+class DownloadImgSync(AbstractDownload):
+    @timer("sync")
+    def __init__(self, url: str, filename: str, image_counter: int = 1):
+        self.main(url, filename, image_counter)
+
+    def get_json_from_url(self, url: str) -> dict[str, str]:
+        response = requests.get(url)
+        response_decode = response.content.decode()
+        response_json = json.loads(response_decode)
+        return response_json
+
+    def downloader(self, url: str, filename: str, image_counter: int) -> None:
+        image = requests.get(self.get_json_from_url(url)['file'])
+        with open(f"{filename}_{image_counter}.jpg", 'wb') as f:
+            f.write(image.content)
+
+    def main(self, url: str, filename: str, image_counter: int) -> None:
+        self.downloader(url, filename, image_counter)
+
+
+class DownloadImgAsync(AbstractDownload):
+    @timer("async", True)
+    def __init__(self, url, filename, value_requests=1, is_logging=False):
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(
+            self.main(url, filename, value_requests, is_logging))
+
+    async def get_json_from_url(self, url, session):
         async with session.get(url) as resp:
             if resp.status == 200:
                 return json.loads(await resp.text())
+            else:
+                raise requests.exceptions.HTTPError
 
-    async def download_img(self, url, filename, session, require_number, logging):
-        images = await self.get_url_img(url, filename, session, require_number)
+    async def downloader(self, url, filename, session, require_number,
+                         is_logging):
+        images = await self.get_json_from_url(url, session)
         async with session.get(images['file']) as resp2:
             with open(f"{filename}_async_{require_number}.jpg", 'wb') as f:
                 f.write(await resp2.read())
-                if logging:
-                    print(f"Create file \"{filename}_async_{require_number}.jpg\"")
+                if is_logging:
+                    print(
+                        f"Create file \"{filename}"
+                        f"_async_{require_number}.jpg\"")
 
-    async def main(self, url, filename, val, logging):
-        number_req = val
+    async def main(self, url, filename, value_requests, is_logging) -> None:
         async with aiohttp.ClientSession() as session:
             await asyncio.gather(
-                *[self.download_img(url, filename, session, i, logging) for i in range(number_req)],
+                *[self.downloader(url, filename, session, i, is_logging) for i
+                  in
+                  range(value_requests)],
             )
 
-    @abc.abstractmethod
-    def async_many_downloads(self, url, filename, val, logging=False):
-        pass
 
+CAT_API_URL = "https://aws.random.cat/meow"
 
-class Download(AbstractDownload):
-    @timer(5)
-    def download_images_sync(self, url, filename, val):
-        content = requests.get(url)
-        content = content.content.decode()
-        content = json.loads(content)
-        image = requests.get(content['file'])
-        image = image.content
-        with open(f"{filename}_{val}.jpg", 'wb') as f:
-            f.write(image)
+DownloadImgAsync(CAT_API_URL, "cat", 5)
 
-    @async_timer(5)
-    def async_many_downloads(self, url, filename, val, logging):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.main(url, filename, val, logging))
-
-
-download_img = Download()
-download_img.download_images_sync("https://aws.random.cat/meow", "cat")
-download_img.async_many_downloads("https://aws.random.cat/meow", "cat")
+DownloadImgSync(CAT_API_URL, "cat", 5)
