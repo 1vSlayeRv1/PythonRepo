@@ -69,20 +69,22 @@ class DownloadImgSync(AbstractDownload):
 
 class DownloadImgAsync(AbstractDownload):
     @timer("async", True)
-    def __init__(self, url, filename, value_requests=1, is_logging=False):
+    def __init__(self, url: str, filename: str,
+                 value_requests: int = 1, is_logging: bool = False):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(
             self.main(url, filename, value_requests, is_logging))
 
-    async def get_json_from_url(self, url, session):
+    async def get_json_from_url(self, url: str, session) -> dict[str, str]:
         async with session.get(url) as resp:
             if resp.status == 200:
                 return json.loads(await resp.text())
             else:
                 raise requests.exceptions.HTTPError
 
-    async def downloader(self, url, filename, session, require_number,
-                         is_logging):
+    async def downloader(self, url: str, filename: str,
+                         session, require_number: int,
+                         is_logging: bool) -> None:
         images = await self.get_json_from_url(url, session)
         async with session.get(images['file']) as resp2:
             with open(f"{filename}_async_{require_number}.jpg", 'wb') as f:
@@ -92,7 +94,8 @@ class DownloadImgAsync(AbstractDownload):
                         f"Create file \"{filename}"
                         f"_async_{require_number}.jpg\"")
 
-    async def main(self, url, filename, value_requests, is_logging) -> None:
+    async def main(self, url: str, filename: str, value_requests: int,
+                   is_logging: bool) -> None:
         async with aiohttp.ClientSession() as session:
             await asyncio.gather(
                 *[self.downloader(url, filename, session, i, is_logging) for i
