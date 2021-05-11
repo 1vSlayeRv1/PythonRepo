@@ -5,17 +5,22 @@ class Alchemy(metaclass=abc.ABCMeta):
     words = {'вода', 'огонь', 'земля', 'воздух'}
 
     def __add__(self, other):
-        if len({self.__class__.__name__, other.__class__.__name__} & {'Fire', 'Water'}) == 2:
+        if len({self.__class__.__name__, other.__class__.__name__} &
+               {'Fire', 'Water'}) == 2:
             Elements().__call__("пар")
-        elif len({self.__class__.__name__, other.__class__.__name__} & {'Par', 'Ground'}) == 2:
+        elif len({self.__class__.__name__, other.__class__.__name__} &
+                 {'Par', 'Ground'}) == 2:
             Elements().__call__("гейзер")
         elif self.__class__.__name__ == other.__class__.__name__ == 'Air':
             Elements().__call__("ветер")
-        elif len({self.__class__.__name__, other.__class__.__name__} & {'Air', 'Fire'}) == 2:
+        elif len({self.__class__.__name__, other.__class__.__name__} &
+                 {'Air', 'Fire'}) == 2:
             Elements().__call__("энергия")
-        elif len({self.__class__.__name__, other.__class__.__name__} & {'Air', 'Energy'}) == 2:
+        elif len({self.__class__.__name__, other.__class__.__name__} &
+                 {'Air', 'Energy'}) == 2:
             Elements().__call__("буря")
-        elif len({self.__class__.__name__, other.__class__.__name__} & {'Water', 'Energy'}) == 2:
+        elif len({self.__class__.__name__, other.__class__.__name__} &
+                 {'Water', 'Energy'}) == 2:
             Elements().__call__("спирт")
 
     @abc.abstractmethod
@@ -120,7 +125,8 @@ class Controller(Alchemy):
             else:
                 print("Элементы не сочетаются!")
         else:
-            print("Вы выбрали несуществующий(-е) элемент(-ы), попробуйте снова!")
+            print("Вы выбрали несуществующий(-е) элемент(-ы),"
+                  " попробуйте снова!")
 
     def start_game(self):
         print("Сейчас доступно для сложения: ")

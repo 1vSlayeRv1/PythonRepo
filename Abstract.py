@@ -2,6 +2,7 @@ import abc
 import datetime
 import json
 import requests
+import typing
 # from __future__ import annotations
 
 import asyncio
@@ -28,7 +29,7 @@ def timer(func_type: str, is_logging: bool = False):
                 print("Время выполнения:",
                       datetime.datetime.now() - started_at)
             elif func_type == "txt":
-                print("Запуск функции загрузки в txt")
+                print("Запуск функции загрузки данных сайта в txt")
                 started_at = datetime.datetime.now()
                 func(self, url, filename, value_requests, is_logging)
                 print("Время выполнения:",
@@ -42,7 +43,7 @@ def timer(func_type: str, is_logging: bool = False):
 class AbstractDownload(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    async def get_info_from_url(self, *args, **kwargs) -> any:
+    async def get_info_from_url(self, *args, **kwargs) -> typing.Any:
         pass
 
     @abc.abstractmethod
